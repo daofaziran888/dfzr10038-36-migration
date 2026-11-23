@@ -110,7 +110,13 @@ def get_flow_trace(module: str, entry_id: int):
 @router.post("/{module}/{entry_id}/actions", response_model=ActionResult)
 def run_action(module: str, entry_id: int, payload: ActionPayload) -> ActionResult:
     service = require_service(module)
-    entry, message = service.run_action(entry_id, payload.action.strip())
+    extra = {
+        "evidence_type": payload.evidence_type,
+        "remark": payload.remark or "",
+        "values": payload.values,
+        "report_id": payload.report_id,
+    }
+    entry, message = service.run_action(entry_id, payload.action.strip(), **extra)
     # 动作执行后触发跨模块数据流
     flow_result = flow_engine.on_action(module, payload.action.strip(), entry_id)
     return ActionResult(ok=entry is not None, message=message, entry=entry,

@@ -12,6 +12,15 @@
         <button class="btn" data-testid="export" type="button" @click="exportRows">
           导出{{ meta.name }}清单
         </button>
+        <button
+          v-if="supportsTrace"
+          class="btn"
+          data-testid="migrate-references"
+          type="button"
+          @click="migrateAll"
+        >
+          迁移可追证引用
+        </button>
       </div>
     </header>
 
@@ -60,6 +69,15 @@
             >
               {{ action }}
             </button>
+            <button
+              v-if="supportsTrace || supportsAuditTrace"
+              class="link"
+              type="button"
+              :data-testid="`trace-${row.id}`"
+              @click="openTrace(Number(row.id))"
+            >
+              审计追证
+            </button>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -90,6 +108,23 @@
       <span>共 {{ total }} 条{{ meta.name }}记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
+
+    <div v-if="traceId !== null" class="modal-backdrop" data-testid="trace-drawer">
+      <div class="modal trace-modal">
+        <TraceDrawer
+          v-if="supportsTrace"
+          :report-id="traceId"
+          @close="traceId = null"
+          @changed="reload"
+        />
+        <AuditTraceDrawer
+          v-else-if="supportsAuditTrace"
+          :audit-id="traceId"
+          @close="traceId = null"
+          @changed="reload"
+        />
+      </div>
+    </div>
   </section>
 </template>
 
@@ -103,10 +138,16 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/backend-service'
+import { migrateReports } from '@/api/trace'
+import AuditTraceDrawer from '@/views/AuditTraceDrawer.vue'
+import TraceDrawer from '@/views/TraceDrawer.vue'
 import type { EntryRow } from '@/data/types'
 
 const props = defineProps<{ moduleKey: string }>()
 const meta = moduleMeta(props.moduleKey)
+const supportsTrace = meta.key === 'report_task'
+const supportsAuditTrace = meta.key === 'govern_audit'
+const traceId = ref<number | null>(null)
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
@@ -162,6 +203,22 @@ async function submitCreate() {
     errorMessage.value = error instanceof Error ? error.message : '登记失败'
   } finally {
     creating.value = false
+  }
+}
+
+function openTrace(reportId: number) {
+  errorMessage.value = ''
+  traceId.value = reportId
+}
+
+async function migrateAll() {
+  errorMessage.value = ''
+  try {
+    const result = await migrateReports()
+    if (!result.ok) throw new Error(result.message)
+    await reload()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '引用迁移失败'
   }
 }
 

@@ -14,6 +14,9 @@ class Store:
         self._tables: dict[str, list[dict[str, Any]]] = {
             name: [dict(row) for row in rows] for name, rows in SEED_ROWS.items()
         }
+        # 辅助表不参与业务模块枚举：报告引用、审计更正和审计处置属于
+        # report_task/govern_audit 的内部可追证数据，不应被当成新的业务模块。
+        self._aux_tables: dict[str, list[dict[str, Any]]] = {}
 
     def module_names(self) -> list[str]:
         return sorted(self._tables)
@@ -26,6 +29,18 @@ class Store:
             if int(row.get("id", 0)) == entry_id:
                 return row
         return None
+
+    def aux_rows(self, table: str) -> list[dict[str, Any]]:
+        return self._aux_tables.setdefault(table, [])
+
+    def aux_find(self, table: str, entry_id: int) -> dict[str, Any] | None:
+        for row in self.aux_rows(table):
+            if int(row.get("id", 0)) == entry_id:
+                return row
+        return None
+
+    def next_aux_id(self, table: str) -> int:
+        return max((int(row.get("id", 0)) for row in self.aux_rows(table)), default=0) + 1
 
     def overview(self) -> dict[str, object]:
         modules: list[dict[str, object]] = []

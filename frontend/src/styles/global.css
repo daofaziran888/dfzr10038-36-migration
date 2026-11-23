@@ -38,6 +38,10 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .create-field { display: block; margin-bottom: 10px; }
 .create-field span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
 .create-field input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+.trace-modal { width: min(1040px, 100%); }
+.trace-modal .trace-panel { display: flex; flex-direction: column; gap: 12px; }
+.trace-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.trace-card h4 { margin: 0 0 8px; font-size: 13px; }
 /* DAG 拓扑图 */
 .dag-wrap { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: #fff; min-height: 320px; user-select: none; }
 .dag-svg { width: 100%; height: 100%; }
